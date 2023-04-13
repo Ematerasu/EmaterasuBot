@@ -10,7 +10,7 @@ ADDED_SONG_RESPONSES = [
 ]
 
 ERROR_SONG_RESPONSES = [
-    'nie udało się dodać SadCat Niech jakiś mod zwróci punkty',
+    'nie udało się dodać SadCat',
     'jakis blad wystapil Sadeg',
     'cos nie pyklo catSad sprobuj jeszcze raz za chwile',
     'kolego/kolezanko nie udalo sie dodac jasperSad',

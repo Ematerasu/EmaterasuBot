@@ -1,16 +1,16 @@
 {"intents": [
     {"tag": "greeting",
-     "patterns": [],
-     "responses": [],
-     "context_set": ""
+        "patterns": ["siema", "cześć", "czesc", "elo", "hej", "hejka", "hello", "hi", "dzien dobry", "witaj", "uszanowanko", "uszanowanie"],
+        "responses": ["Witam cie peepoHey", "Hej, milo cie widziec peepoShy", "No hejka Flushge", "Heja hiheyhello", "jasperHey", "Czesc jasperHey"],
+        "context_set": ""
     },
     {"tag": "goodbye",
-     "patterns": [],
-     "responses": []
+        "patterns": ["nara", "narazie", "do widzenia", "papa", "zegnaj"],
+        "responses": []
     },
     {"tag": "thanks",
-     "patterns": [],
-     "responses": []
+        "patterns": [],
+        "responses": []
     }
 ]
 }

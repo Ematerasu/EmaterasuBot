@@ -3,7 +3,9 @@ import re
 import asyncio
 import random
 import twitchio
+import time
 from twitchio.ext import commands
+from twitchio.ext.commands.errors import CommandOnCooldown
 from urllib.parse import parse_qs, urlparse
 
 from api.StreamElementsAPI import StreamElementsAPI
@@ -13,6 +15,7 @@ from api.YoutubeAPI import YoutubeAPI
 from config import (
     BANNED_VIDEOS,
     FURAZEK_EMOTES_LIST,
+    SONG_REQUEST_SAVE_PLAYLISTS,
     STREAMELEMENTS_MAPPING,
     SUPPORTED_CHANNELS,
 )
@@ -21,13 +24,16 @@ from utils.utils import pretty_print_dict
 
 class EmaterasuBot(commands.Bot):
 
-    valid_commands = ('Hejka', 'sr')
+    valid_commands = ('Hejka', 'sr', 'ratujsr')
 
     def __init__(self, oauth_token: str):
         self.twitch_api = TwitchAPI()
         self.stream_elements_api = StreamElementsAPI()
         self.yt_api = YoutubeAPI()
         self.series_of_msgs = []
+        self.flags = {
+            'save_sr': (False, None)
+        }
         super().__init__(token=oauth_token, prefix='%', initial_channels=SUPPORTED_CHANNELS)
 
     async def event_ready(self):
@@ -42,14 +48,14 @@ class EmaterasuBot(commands.Bot):
     async def Hejka(self, ctx: commands.Context):
         await ctx.send(f'Hejka {ctx.author.name}!')
 
-    @commands.cooldown(rate=1, per=5, bucket=commands.Bucket.member)
+    @commands.cooldown(rate=5, per=600, bucket=commands.Bucket.member)
     @commands.command()
     async def sr(self, ctx: commands.Context):
         user_input = ctx.message.content.split(maxsplit=1)[1]
         query = self._parse_input(user_input) 
         if query['type'] == 'video':
             video_id = query['query']
-            is_valid, error_response = self._check_link(user_input, ctx.author.name)
+            is_valid, error_response = self._check_link(user_input, ctx.author.name, ctx.message.tags['mod'] == '1')
             if not is_valid:
                 await ctx.send(error_response)
                 return
@@ -82,23 +88,58 @@ class EmaterasuBot(commands.Bot):
                     continue
                 elif 200 <= response.status_code < 300:
                     print(f'{ctx.author.name} added song with id {video_id}. Response: {response.status_code}')
-                    await ctx.send(f'@{ctx.author.name} ' + random.choice(ADDED_SONG_RESPONSES) + f'. Link: https://www.youtube.com/watch?v={video_id} Tytuł: {title}')
+                    await ctx.send(f'@{ctx.author.name} ' + random.choice(ADDED_SONG_RESPONSES) + f' Link: https://www.youtube.com/watch?v={video_id} Tytuł: {title}')
                     is_success = True
                     break
             if not is_success:
                 await ctx.send(f'@{ctx.author.name} ' + random.choice(ERROR_SONG_RESPONSES))
 
+    @commands.cooldown(rate=1, per=1800, bucket=commands.Bucket.channel)
+    @commands.command()
+    async def ratujsr(self, ctx: commands.Context):
+        if self.flags['save_sr'][0]: #if already enabled
+            return
+        
+        if len(self.stream_elements_api.get_queue(STREAMELEMENTS_MAPPING[ctx.channel.name])) > 2:
+            await ctx.send(f'@{ctx.author.name} tu nie ma co ratować, jest więcej niż 2 piosenki, może ktoś jeszcze dołoży aok')
+            return
+
+        self.flags['save_sr'] = (True, ctx.author.name)
+        categories = ', '.join(SONG_REQUEST_SAVE_PLAYLISTS)
+        await ctx.send(f'@{ctx.author.name} juz ratuje sr aok Powiedz mi tylko jaki tematyczny mix wrzucic. Aktualnie dostepne kategorie to: {categories}')
 
     async def event_message(self, message: twitchio.Message):
         if message.echo:
             return
         elif '@EmaterasuBot' == message.content:
             await message.channel.send(f'@{message.author.name} co aha')
+        elif message.content.startswith('@EmaterasuBot kulki'):
+            await message.channel.send('!play')
+            time.sleep(1)
+            await message.channel.send('kulki Excitedgers')
         elif 'custom-reward-id' in message.tags and message.tags['custom-reward-id'] == 'd054e175-4dfa-4bc5-9e17-09409d9609bd':
             await self.handle_sr_prio_redeem(message)
         elif '!redeem zacoban' == message.content:
             await message.channel.send('za co ban aha')
-        else:
+        elif self.flags['save_sr'][0] and self.flags['save_sr'][1] == message.author.name:
+            try:
+                playlist = SONG_REQUEST_SAVE_PLAYLISTS[message.content]
+            except KeyError:
+                await message.channel.send(f'@{message.author.name} podaj prosze poprawna kategorie playlisty aha5 Tylko takie mam przygotowane Sadeg')
+                return
+            channel_id = STREAMELEMENTS_MAPPING[message.channel.name]
+            response = self.stream_elements_api.add_song(
+                playlist,
+                channel_id
+            )
+            print(f'{message.author.name} requested for playlist {playlist}. Response: {response.status_code}')
+            if response.status_code >= 400:
+                print(response.text)
+                await message.channel.send('nie udało się uratować song requesta jasperSad spróbuj jeszcze raz użyć komendy')
+            elif 200 <= response.status_code < 300:
+                await message.channel.send('song request uratowany! jasperRADOSC')
+            self.flags['save_sr'] = (False, None)
+        elif not message.content.startswith('%'):
             msg = re.sub('[^A-Za-z0-9]+', ' ', message.content).strip() # parse and remove escape characters
 
             if not self.series_of_msgs or msg != self.series_of_msgs[-1]:
@@ -114,18 +155,21 @@ class EmaterasuBot(commands.Bot):
                 print(f'sent message: {self.series_of_msgs[0]}')
                 self.series_of_msgs = []
 
-        await self.handle_commands(message)
+        try:
+            await self.handle_commands(message)
+        except CommandOnCooldown:
+            await message.channel.send('cooldown masz tssk zaczekaj chwile')
 
     async def handle_commands(self, message):
         if message.content.startswith('%'):
             cmd = message.content.split()[0][1:]
             if cmd not in self.valid_commands:
-                await message.channel.send(f'@{message.author.name} nie rozumiem aha Dostępne komendy: Hejka, sr <link do yt>')
+                await message.channel.send(f'@{message.author.name} nie rozumiem aha Dostępne komendy: Hejka, sr <link do yt>, ratujsr')
                 return
         return await super().handle_commands(message)
 
     async def handle_sr_prio_redeem(self, message):
-        is_valid, error_response = self._check_link(message.content, message.author.name)
+        is_valid, error_response = self._check_link(message.content, message.author.name, message.tags['mod'] == '1')
         if not is_valid:
             await message.channel.send(error_response)
 
@@ -151,15 +195,17 @@ class EmaterasuBot(commands.Bot):
         loop.create_task(chan.send("ide spać dobranoc papa NewOutfit"))
         await super().close()
 
-    def _check_link(self, video_url, author_name):
+    def _check_link(self, video_url, author_name, is_mod):
         if not self._is_link_valid(video_url):
-            return
+            return False, f'@{author_name} link jest nieprawidlowy jasperSad'
         video_id = self._get_video_id(video_url)
         if video_id in BANNED_VIDEOS:
             return False, f'@{author_name} zultakartka film jest zbanowany'
         video_info = self.yt_api.get_video_info(video_id)
         if not video_info['items']:
             return False, f'@{author_name} link nie działa jasperSad'
+        if is_mod:
+            return True, ''
         duration = video_info['items'][0]['contentDetails']['duration']
         if self._is_longer_than_10_minutes(duration):
             return False, f'@{author_name} filmik jest za długi posluchajdzieciaku max 10 minut'

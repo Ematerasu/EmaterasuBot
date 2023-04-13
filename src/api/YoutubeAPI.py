@@ -24,7 +24,6 @@ class YoutubeAPI:
         if response.status_code == 200:
             data = response.json()
             videos = []
-            pretty_print_dict(data)
             for item in data['items']:
                 if item['id']['kind'] == 'youtube#video':
                     video_id = item['id']['videoId']
