@@ -6,11 +6,11 @@
     },
     {"tag": "goodbye",
         "patterns": ["nara", "narazie", "do widzenia", "papa", "zegnaj"],
-        "responses": []
+        "responses": ["elo papa", "siema aok", "do zobaczenia peepoHey"]
     },
     {"tag": "thanks",
-        "patterns": [],
-        "responses": []
+        "patterns": ["Dzięki", "Dziękuje", "Dzięks", "Dziękuwa"],
+        "responses": ["Spoko aok", "Nie ma problemu ok", "No problemo ok", "Nie ma sprawy"]
     }
 ]
 }

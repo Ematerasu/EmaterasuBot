@@ -51,6 +51,9 @@ class EmaterasuBot(commands.Bot):
     @commands.cooldown(rate=5, per=600, bucket=commands.Bucket.member)
     @commands.command()
     async def sr(self, ctx: commands.Context):
+        if ctx.author.name == 'harryxyz_':
+            await ctx.send("Harry wez juz sie kurwa uspokoj z tym sr japierdole")
+            return
         user_input = ctx.message.content.split(maxsplit=1)[1]
         query = self._parse_input(user_input) 
         if query['type'] == 'video':
@@ -106,7 +109,7 @@ class EmaterasuBot(commands.Bot):
 
         self.flags['save_sr'] = (True, ctx.author.name)
         categories = ', '.join(SONG_REQUEST_SAVE_PLAYLISTS)
-        await ctx.send(f'@{ctx.author.name} juz ratuje sr aok Powiedz mi tylko jaki tematyczny mix wrzucic. Aktualnie dostepne kategorie to: {categories}')
+        await ctx.send(f'@{ctx.author.name} juz ratuje sr aok Powiedz mi tylko jaki tematyczny mix wrzucic. Aktualnie dostepne kategorie to: {categories}. By wybrać playliste wpisz tylko i wyłącznie jej nazwe.')
 
     async def event_message(self, message: twitchio.Message):
         if message.echo:
@@ -126,6 +129,7 @@ class EmaterasuBot(commands.Bot):
                 playlist = SONG_REQUEST_SAVE_PLAYLISTS[message.content]
             except KeyError:
                 await message.channel.send(f'@{message.author.name} podaj prosze poprawna kategorie playlisty aha5 Tylko takie mam przygotowane Sadeg')
+                self.flags['save_sr'] = (False, None)
                 return
             channel_id = STREAMELEMENTS_MAPPING[message.channel.name]
             response = self.stream_elements_api.add_song(
