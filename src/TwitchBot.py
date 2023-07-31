@@ -41,7 +41,10 @@ class EmaterasuBot(commands.Bot):
         print(f'User id is | {self.user_id}')
         chan = self.get_channel('FURAZEK')
         loop = asyncio.get_event_loop()
-        loop.create_task(chan.send("Hejka wicowie pjpj"))
+        loop.create_task(chan.send("Hejka wicowie pipj"))
+
+    def reset_token(self):
+        self.twitch_api = TwitchAPI()
 
     @commands.cooldown(rate=1, per=20, bucket=commands.Bucket.member)
     @commands.command()
@@ -51,9 +54,6 @@ class EmaterasuBot(commands.Bot):
     @commands.cooldown(rate=5, per=600, bucket=commands.Bucket.member)
     @commands.command()
     async def sr(self, ctx: commands.Context):
-        if ctx.author.name == 'harryxyz_':
-            await ctx.send("Harry wez juz sie kurwa uspokoj z tym sr japierdole")
-            return
         user_input = ctx.message.content.split(maxsplit=1)[1]
         query = self._parse_input(user_input) 
         if query['type'] == 'video':
@@ -117,7 +117,7 @@ class EmaterasuBot(commands.Bot):
         elif '@EmaterasuBot' == message.content:
             await message.channel.send(f'@{message.author.name} co aha')
         elif message.content.startswith('@EmaterasuBot kulki'):
-            await message.channel.send('!play')
+            await message.channel.send('!play2')
             time.sleep(1)
             await message.channel.send('kulki Excitedgers')
         elif 'custom-reward-id' in message.tags and message.tags['custom-reward-id'] == 'd054e175-4dfa-4bc5-9e17-09409d9609bd':
