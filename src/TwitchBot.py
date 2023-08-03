@@ -1,10 +1,9 @@
-import os
 import re
 import asyncio
 import random
 import twitchio
 import time
-from twitchio.ext import commands
+from twitchio.ext import commands, routines
 from twitchio.ext.commands.errors import CommandOnCooldown
 from urllib.parse import parse_qs, urlparse
 
@@ -20,7 +19,6 @@ from config import (
     SUPPORTED_CHANNELS,
 )
 from responses import ADDED_SONG_RESPONSES, ERROR_SONG_RESPONSES
-from utils.utils import pretty_print_dict
 
 class EmaterasuBot(commands.Bot):
 
@@ -35,16 +33,20 @@ class EmaterasuBot(commands.Bot):
             'save_sr': (False, None)
         }
         super().__init__(token=oauth_token, prefix='%', initial_channels=SUPPORTED_CHANNELS)
+        self.reset_token.start()
 
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')
         chan = self.get_channel('FURAZEK')
         loop = asyncio.get_event_loop()
-        loop.create_task(chan.send("Hejka wicowie pipj"))
+        loop.create_task(chan.send("Hejka wicowie ematerasu"))
 
-    def reset_token(self):
+    @routines.routine(hours=12)
+    async def reset_token(self):
+        print("Reset token start")
         self.twitch_api = TwitchAPI()
+        print("Reset token finished")
 
     @commands.cooldown(rate=1, per=20, bucket=commands.Bucket.member)
     @commands.command()
@@ -162,7 +164,7 @@ class EmaterasuBot(commands.Bot):
         try:
             await self.handle_commands(message)
         except CommandOnCooldown:
-            await message.channel.send('cooldown masz tssk zaczekaj chwile')
+            await message.channel.send('cooldown masz TSSK zaczekaj chwile')
 
     async def handle_commands(self, message):
         if message.content.startswith('%'):

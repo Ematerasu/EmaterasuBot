@@ -20,6 +20,7 @@ class TwitchAPI:
         }
 
         response = requests.post(url=self.AUTH_URL, params=auth_params)
+        print(f'Authentication on Twitch API returned {response.status_code} code')
         return response.json()['access_token']
 
 
