@@ -32,8 +32,8 @@ class EmaterasuBot(commands.Bot):
         self.flags = {
             'save_sr': (False, None)
         }
-        super().__init__(token=oauth_token, prefix='%', initial_channels=SUPPORTED_CHANNELS)
         self.reset_token.start()
+        super().__init__(token=oauth_token, prefix='%', initial_channels=SUPPORTED_CHANNELS)
 
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
