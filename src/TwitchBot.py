@@ -32,7 +32,6 @@ class EmaterasuBot(commands.Bot):
         self.flags = {
             'save_sr': (False, None)
         }
-        self.reset_token.start()
         super().__init__(token=oauth_token, prefix='%', initial_channels=SUPPORTED_CHANNELS)
 
     async def event_ready(self):
@@ -42,7 +41,7 @@ class EmaterasuBot(commands.Bot):
         loop = asyncio.get_event_loop()
         loop.create_task(chan.send("Hejka wicowie ematerasu"))
 
-    @routines.routine(hours=12)
+    @routines.routine(hours=1)
     async def reset_token(self):
         print("Reset token start")
         self.twitch_api = TwitchAPI()
