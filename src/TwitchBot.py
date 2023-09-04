@@ -1,6 +1,7 @@
 import re
 import asyncio
 import random
+from api.SeventvAPI import SevenTVAPI
 import twitchio
 import time
 from twitchio.ext import commands, routines
@@ -9,25 +10,27 @@ from urllib.parse import parse_qs, urlparse
 
 from api.StreamElementsAPI import StreamElementsAPI
 from api.TwitchAPI import TwitchAPI
+from api.XayoAPI import XayoAPI
 from api.YoutubeAPI import YoutubeAPI
 
 from config import (
     BANNED_VIDEOS,
-    FURAZEK_EMOTES_LIST,
     SONG_REQUEST_SAVE_PLAYLISTS,
     STREAMELEMENTS_MAPPING,
     SUPPORTED_CHANNELS,
+    WYMOWKI,
 )
 from responses import ADDED_SONG_RESPONSES, ERROR_SONG_RESPONSES
 
 class EmaterasuBot(commands.Bot):
 
-    valid_commands = ('Hejka', 'sr', 'ratujsr')
+    valid_commands = ('Hejka', 'sr', 'ratujsr', 'chatActivityCheck', 'sprawdz', 'wymowka')
 
     def __init__(self, oauth_token: str):
         self.twitch_api = TwitchAPI()
         self.stream_elements_api = StreamElementsAPI()
         self.yt_api = YoutubeAPI()
+        self.seventv_api = SevenTVAPI()
         self.series_of_msgs = []
         self.flags = {
             'save_sr': (False, None)
@@ -37,6 +40,7 @@ class EmaterasuBot(commands.Bot):
     async def event_ready(self):
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')
+        print(f'Connected to: {self.connected_channels}')
         chan = self.get_channel('FURAZEK')
         loop = asyncio.get_event_loop()
         loop.create_task(chan.send("Hejka wicowie ematerasu"))
@@ -46,6 +50,17 @@ class EmaterasuBot(commands.Bot):
         print("Reset token start")
         self.twitch_api = TwitchAPI()
         print("Reset token finished")
+        self.seventv_api.refresh()
+
+    @routines.routine(hours=2)
+    async def chatActivityCheck(self):
+        print("chatActivityCheck")
+        chan = self.get_channel('FURAZEK')
+        if chan is None:
+            print('couldnt find channel')
+            return
+        loop = asyncio.get_event_loop()
+        loop.create_task(chan.send("lecimyrp sprawdzanie aktywnosci na czacie! Jesli jeszcze tu jesteś napisz megastream"))
 
     @commands.cooldown(rate=1, per=20, bucket=commands.Bucket.member)
     @commands.command()
@@ -148,7 +163,7 @@ class EmaterasuBot(commands.Bot):
             msg = re.sub('[^A-Za-z0-9]+', ' ', message.content).strip() # parse and remove escape characters
 
             if not self.series_of_msgs or msg != self.series_of_msgs[-1]:
-                if msg in FURAZEK_EMOTES_LIST:
+                if msg in self.seventv_api.emotes:
                     self.series_of_msgs = [msg]
                 else:
                     self.series_of_msgs = []
@@ -165,11 +180,30 @@ class EmaterasuBot(commands.Bot):
         except CommandOnCooldown:
             await message.channel.send('cooldown masz TSSK zaczekaj chwile')
 
+    @commands.cooldown(rate=1, per=20, bucket=commands.Bucket.member)
+    @commands.command()
+    async def sprawdz(self, ctx: commands.Context):
+        user_input = ctx.message.content.split(maxsplit=1)[1]
+        top5_channels = XayoAPI.get_watchtime(user_input)
+        if not top5_channels:
+            await ctx.channel.send(f'Cos nie pyklo jasperSad')
+            return
+        top5_channels = ', '.join(top5_channels)
+        await ctx.channel.send(f'Top 5 ogladanych kanałów przez użytkownika {user_input} to kolejno: {top5_channels}')
+
+    @commands.cooldown(rate=1, per=1800, bucket=commands.Bucket.channel)
+    @commands.command()
+    async def wymowka(self, ctx: commands.Context):
+        wymowka = random.choice(WYMOWKI)
+        print(wymowka)
+        await ctx.channel.send(f'Dzisiejsza wymowka to: {wymowka}')
+
     async def handle_commands(self, message):
         if message.content.startswith('%'):
             cmd = message.content.split()[0][1:]
             if cmd not in self.valid_commands:
-                await message.channel.send(f'@{message.author.name} nie rozumiem aha Dostępne komendy: Hejka, sr <link do yt>, ratujsr')
+                commands = ', '.join(self.valid_commands)
+                await message.channel.send(f'@{message.author.name} nie rozumiem aha Dostępne komendy: {commands}')
                 return
         return await super().handle_commands(message)
 

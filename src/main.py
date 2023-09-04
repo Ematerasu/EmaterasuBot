@@ -10,7 +10,9 @@ if __name__ == '__main__':
     load_dotenv()
     oauth_token = os.getenv('TWITCH_OAUTH_TOKEN')
     bot = EmaterasuBot(oauth_token)
-    _task = bot.reset_token.start()
+    tasks = [bot.reset_token, bot.chatActivityCheck]
+    for task in tasks:
+        task.start()
 
     try:
         bot.run()
