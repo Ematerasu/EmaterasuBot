@@ -20,6 +20,15 @@ class StreamElementsAPI:
         response = requests.get(self.BASE_URL+endpoint, headers=headers)
         return response.json()
     
+    def get_current_song(self, channel_id: str=''):
+        endpoint = f'songrequest/{channel_id if channel_id else self.account_id}/playing'
+        headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {self.jwt_token}'
+        }
+        response = requests.get(self.BASE_URL+endpoint, headers=headers)
+        return response.json()
+    
     def add_song(self, video_id: str, channel_id: str =''):
         endpoint = f'songrequest/{channel_id if channel_id else self.account_id}/queue'
         

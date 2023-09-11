@@ -15,6 +15,7 @@ from api.YoutubeAPI import YoutubeAPI
 
 from config import (
     BANNED_VIDEOS,
+    CUSTOM_REWARD_MAPPING,
     SONG_REQUEST_SAVE_PLAYLISTS,
     STREAMELEMENTS_MAPPING,
     SUPPORTED_CHANNELS,
@@ -41,9 +42,9 @@ class EmaterasuBot(commands.Bot):
         print(f'Logged in as | {self.nick}')
         print(f'User id is | {self.user_id}')
         print(f'Connected to: {self.connected_channels}')
-        chan = self.get_channel('FURAZEK')
-        loop = asyncio.get_event_loop()
-        loop.create_task(chan.send("Hejka wicowie ematerasu"))
+        for channel in self.connected_channels:
+            loop = asyncio.get_event_loop()
+            loop.create_task(channel.send("Hejka wicowie ematerasu"))
 
     @routines.routine(hours=1)
     async def reset_token(self):
@@ -55,12 +56,13 @@ class EmaterasuBot(commands.Bot):
     @routines.routine(hours=2)
     async def chatActivityCheck(self):
         print("chatActivityCheck")
-        chan = self.get_channel('FURAZEK')
-        if chan is None:
-            print('couldnt find channel')
-            return
-        loop = asyncio.get_event_loop()
-        loop.create_task(chan.send("lecimyrp sprawdzanie aktywnosci na czacie! Jesli jeszcze tu jesteś napisz megastream"))
+        for channel in SUPPORTED_CHANNELS:
+            chan = self.get_channel(channel)
+            if chan is None:
+                print('couldnt find channel')
+                return
+            loop = asyncio.get_event_loop()
+            loop.create_task(chan.send("lecimyrp sprawdzanie aktywnosci na czacie! Jesli jeszcze tu jesteś napisz megastream"))
 
     @commands.cooldown(rate=1, per=20, bucket=commands.Bucket.member)
     @commands.command()
@@ -136,8 +138,8 @@ class EmaterasuBot(commands.Bot):
             await message.channel.send('!play2')
             time.sleep(1)
             await message.channel.send('kulki Excitedgers')
-        elif 'custom-reward-id' in message.tags and message.tags['custom-reward-id'] == 'd054e175-4dfa-4bc5-9e17-09409d9609bd':
-            await self.handle_sr_prio_redeem(message)
+        elif 'custom-reward-id' in message.tags:
+            await self.handle_custom_redeems(message)
         elif '!redeem zacoban' == message.content:
             await message.channel.send('za co ban aha')
         elif self.flags['save_sr'][0] and self.flags['save_sr'][1] == message.author.name:
@@ -206,11 +208,19 @@ class EmaterasuBot(commands.Bot):
                 await message.channel.send(f'@{message.author.name} nie rozumiem aha Dostępne komendy: {commands}')
                 return
         return await super().handle_commands(message)
+    
+    async def handle_custom_redeems(self, message):
+        if message.tags['custom-reward-id'] == CUSTOM_REWARD_MAPPING[message.channel.name]['song_request_prio']:
+            await self.handle_sr_prio_redeem(message)
+        elif message.tags['custom-reward-id'] == CUSTOM_REWARD_MAPPING[message.channel.name]['vol100']:
+            await self.handle_volume_change_redeem(message)
+        return
 
     async def handle_sr_prio_redeem(self, message):
         is_valid, error_response = self._check_link(message.content, message.author.name, message.tags['mod'] == '1')
         if not is_valid:
             await message.channel.send(error_response)
+            return
 
         channel_id = STREAMELEMENTS_MAPPING[message.channel.name]
         try:
@@ -227,6 +237,15 @@ class EmaterasuBot(commands.Bot):
         except:
             await message.channel.send(f'@{message.author.name} nie udało się dodać na szczyt listy SadCat Niech jakiś mod zwróci punkty')
         
+
+    async def handle_volume_change_redeem(self, message):
+        current_song_id = self.stream_elements_api.get_current_song(STREAMELEMENTS_MAPPING[message.channel.name])['_id']
+        default_vol = 15
+        await message.channel.send(f'!vol {message.content}')
+        await asyncio.sleep(10)
+        while current_song_id == self.stream_elements_api.get_current_song(STREAMELEMENTS_MAPPING[message.channel.name])['_id']:
+            await asyncio.sleep(10)
+        await message.channel.send(f'!vol {default_vol}')
 
     async def close(self):
         chan = self.get_channel('FURAZEK')
