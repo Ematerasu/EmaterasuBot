@@ -25,7 +25,7 @@ from responses import ADDED_SONG_RESPONSES, ERROR_SONG_RESPONSES
 
 class EmaterasuBot(commands.Bot):
 
-    valid_commands = ('Hejka', 'sr', 'ratujsr', 'chatActivityCheck', 'sprawdz', 'wymowka')
+    valid_commands = ('Hejka', 'sr', 'ratujsr', 'sprawdz', 'wymowka')
 
     def __init__(self, oauth_token: str):
         self.twitch_api = TwitchAPI()
@@ -214,6 +214,8 @@ class EmaterasuBot(commands.Bot):
             await self.handle_sr_prio_redeem(message)
         elif message.tags['custom-reward-id'] == CUSTOM_REWARD_MAPPING[message.channel.name]['vol100']:
             await self.handle_volume_change_redeem(message)
+        elif message.tags['custom-reward-id'] == CUSTOM_REWARD_MAPPING[message.channel.name]['timeout']:
+            await self.handle_timeout_redeem(message)
         return
 
     async def handle_sr_prio_redeem(self, message):
@@ -237,7 +239,6 @@ class EmaterasuBot(commands.Bot):
         except:
             await message.channel.send(f'@{message.author.name} nie udało się dodać na szczyt listy SadCat Niech jakiś mod zwróci punkty')
         
-
     async def handle_volume_change_redeem(self, message):
         current_song_id = self.stream_elements_api.get_current_song(STREAMELEMENTS_MAPPING[message.channel.name])['_id']
         default_vol = 15
@@ -247,10 +248,13 @@ class EmaterasuBot(commands.Bot):
             await asyncio.sleep(10)
         await message.channel.send(f'!vol {default_vol}')
 
+    async def handle_timeout_redeem(self, message):
+        await message.channel.send(f'!ftimeout {message.content}')
+
     async def close(self):
-        chan = self.get_channel('FURAZEK')
-        loop = asyncio.get_event_loop()
-        loop.create_task(chan.send("ide spać dobranoc papa NewOutfit"))
+        for channel in self.connected_channels:
+            loop = asyncio.get_event_loop()
+            loop.create_task(channel.send("ide spać dobranoc papa NewOutfit"))
         await super().close()
 
     def _check_link(self, video_url, author_name, is_mod):

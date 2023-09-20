@@ -54,10 +54,12 @@ WYMOWKI = (
 CUSTOM_REWARD_MAPPING = {
     'furazek': {
         'song_request_prio': 'd054e175-4dfa-4bc5-9e17-09409d9609bd',
-        'vol100': None
+        'vol100': None,
+        'timeout': '55b4599c-b7b9-4a3b-bdb6-571c3b7fcc04',
     },
     'ematerasu__': {
         'song_request_prio': '36634d5b-b01a-46de-b22a-1b41b515ea9b',
         'vol100': '33e98c13-c227-4c52-adf0-d1bde424912f',
+        'timeout': 'c097aa27-d5c4-47a5-b504-350a45020638',
     }
 }
