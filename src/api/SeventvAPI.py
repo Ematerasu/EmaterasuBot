@@ -12,9 +12,11 @@ class SevenTVAPI:
         self._get_furazek_emote_set()
 
     def _get_furazek_emote_set(self):
-        res = requests.get(self.BASE_URL).json()
+        res = requests.get(self.BASE_URL)
+        if res.status_code != 200:
+            return
         emotes = []
-        for emote in res:
+        for emote in res.json():
             emotes.append(emote['code'])
         self.emotes = tuple(emotes)
     

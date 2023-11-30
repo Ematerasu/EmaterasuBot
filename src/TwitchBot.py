@@ -46,7 +46,7 @@ class EmaterasuBot(commands.Bot):
             loop = asyncio.get_event_loop()
             loop.create_task(channel.send("Hejka wicowie ematerasu"))
 
-    @routines.routine(hours=1)
+    @routines.routine(hours=12)
     async def reset_token(self):
         print("Reset token start")
         self.twitch_api = TwitchAPI()
